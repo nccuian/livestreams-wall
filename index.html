@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>livestreams</title>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+  <link rel="stylesheet" href="./style/style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="navbar">
+      <div style="width: 100%; text-align: center">
+        <button @click="open = !open">Top 10 Games <i class="fas fa-sort-down"></i></button>
+        <button @click="updateData(game, 'en')" style="margin: 0 20px">English</button>
+        <button @click="updateData(game, 'zh-tw')">繁體中文</button> 
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col" v-for="stream in streams">
+          <div class="preview">
+            <a :href="stream.channel.url"><img :src="stream.preview.medium" alt=""></a>
+          </div>
+          <div class="bottom">
+            <div class="avatar">
+              <img :src="stream.channel.logo" alt="">
+            </div>
+            <div class="info">
+              <div class="channel-name">{{stream.channel.status}}</div>
+              <div class="host-name">
+                <span>{{stream.channel.display_name}}</span>
+                <span style="display: inline-block; margin-left: auto">{{stream.viewers}} <i class="fas fa-user"></i></span>
+              </div>
+            </div>  
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="top10game" :class="{'top0': open}">
+      <div class="topBox">
+        <div class="box" v-for="game in gameName" @click="updateData(game.game.name, lang)">
+          <div class="preview">
+            <img :src="game.game.box.large" alt="">
+          </div>
+          <div class="bottom">
+            <div class="name" style="margin-bottom:8px;">{{game.game.name}}</div>
+            <div class="viewer">{{game.viewers}} <i class="fas fa-user"></i></div> 
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous">
+</script>
+
+<script>
+  var vm = new Vue({
+    el: '#app',
+    data() {
+      return {
+        clientId: '9z9at2kdbh0bcxq8qduxf99oymbkhg',
+        game: 'League%20of%20Legends',
+        nowIndex: 0,
+        limit: 18,
+        lang: 'zh-tw',
+        streams: [],
+        gameName: [],
+        isLoading: false,
+        open: false,
+      }
+    },
+    methods: {
+      getData(lang) {
+        this.isLoading = true;
+        const api = `https://api.twitch.tv/kraken/streams/?game=${this.game}&limit=${this.limit}&client_id=${this.clientId}&offset=${this.nowIndex}&language=${lang}`;
+        axios.get(api).then((response) => {
+          response.data.streams.forEach((i) => {
+            this.streams.push(i);
+            this.isLoading = false;
+          })
+          // if(lang == this.lang) {
+            
+          // } else {
+          //   this.lang = lang;
+          //   this.streams = response.data.streams;
+          //   this.isLoading = false;
+          // }
+        })
+      },
+      updateData(game, lang) {
+        this.isLoading = true;
+        this.nowIndex = 0;
+        this.game = game;
+        this.lang = lang;
+        this.open = false;
+        const api = `https://api.twitch.tv/kraken/streams/?game=${this.game}&limit=${this.limit}&client_id=${this.clientId}&offset=${this.nowIndex}&language=${lang}`;
+        console.log(api)
+        axios.get(api).then((response) => {
+          this.streams = response.data.streams;
+          this.isLoading = false;
+        });
+        document.documentElement.scrollTop = 0;
+      },
+      getGameName() {
+        const api = `https://api.twitch.tv/kraken/games/top?client_id=${this.clientId}`;
+        axios.get(api).then((response) => {
+          console.log(response.data.top)
+          this.gameName = response.data.top
+        })
+      }
+    },
+    mounted() {
+      this.getData(this.lang);
+      this.getGameName();
+    }
+  })
+
+  $(window).scroll(() => {
+    if($(window).scrollTop() + $(window).height() >= $(document).height()-200) {
+      if(!vm.isLoading) {
+        vm.nowIndex += 18;
+        vm.getData(vm.lang);
+      }
+    }
+  })
+
+</script>
